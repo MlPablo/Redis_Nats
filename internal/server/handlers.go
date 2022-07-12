@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/MlPablo/CRUDService/internal/models"
+	"github.com/MlPablo/CRUDService/voc"
 )
 
 func (s *server) CreateUser() gin.HandlerFunc {
@@ -23,7 +24,7 @@ func (s *server) CreateUser() gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, "Cannot connect to nats")
 			return
 		}
-		resp, err := s.nc.Request("service.create", byteUser, time.Second)
+		resp, err := s.nc.Request(voc.SubjectCreate, byteUser, time.Second)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -50,7 +51,7 @@ func (s *server) UpdateUser() gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, "Cannot connect to nats")
 			return
 		}
-		resp, err := s.nc.Request("service.update", byteUser, time.Second)
+		resp, err := s.nc.Request(voc.SubjectUpdate, byteUser, time.Second)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -68,7 +69,7 @@ func (s *server) DeleteUserByID() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("user")
 
-		resp, err := s.nc.Request("service.delete", []byte(id), time.Second)
+		resp, err := s.nc.Request(voc.SubjectDelete, []byte(id), time.Second)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -86,7 +87,7 @@ func (s *server) GetUserByID() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("user")
 
-		resp, err := s.nc.Request("service.get", []byte(id), time.Second)
+		resp, err := s.nc.Request(voc.SubjectGet, []byte(id), time.Second)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return

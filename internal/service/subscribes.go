@@ -7,6 +7,7 @@ import (
 
 	"github.com/MlPablo/CRUDService/internal/models"
 	"github.com/MlPablo/CRUDService/internal/store"
+	"github.com/MlPablo/CRUDService/voc"
 )
 
 type SubscribedCRUDService interface {
@@ -48,7 +49,7 @@ func NewSubscribedService(store store.Storage) (SubscribedCRUDService, error) {
 }
 
 func (s *subscribe) SubscribeCreate(name string) error {
-	if _, err := s.nc.QueueSubscribe("service.create", "service_queue", func(msg *nats.Msg) {
+	if _, err := s.nc.QueueSubscribe(voc.SubjectCreate, voc.NatsToServicesQueue, func(msg *nats.Msg) {
 		user := models.User{}
 		if err := json.Unmarshal(msg.Data, &user); err != nil {
 			msg.Respond([]byte(err.Error()))
@@ -66,7 +67,7 @@ func (s *subscribe) SubscribeCreate(name string) error {
 }
 
 func (s *subscribe) SubscribeDelete(name string) error {
-	if _, err := s.nc.QueueSubscribe("service.delete", "service_queue", func(msg *nats.Msg) {
+	if _, err := s.nc.QueueSubscribe(voc.SubjectDelete, voc.NatsToServicesQueue, func(msg *nats.Msg) {
 		if err := s.cs.DeleteUser(string(msg.Data)); err != nil {
 			msg.Respond([]byte(err.Error()))
 		}
@@ -79,7 +80,7 @@ func (s *subscribe) SubscribeDelete(name string) error {
 }
 
 func (s *subscribe) SubscribeUpdate(name string) error {
-	if _, err := s.nc.QueueSubscribe("service.update", "service_queue", func(msg *nats.Msg) {
+	if _, err := s.nc.QueueSubscribe(voc.SubjectUpdate, voc.NatsToServicesQueue, func(msg *nats.Msg) {
 		user := models.User{}
 		if err := json.Unmarshal(msg.Data, &user); err != nil {
 			msg.Respond([]byte(err.Error()))
@@ -97,7 +98,7 @@ func (s *subscribe) SubscribeUpdate(name string) error {
 }
 
 func (s subscribe) SubscribeGet(name string) error {
-	if _, err := s.nc.QueueSubscribe("service.get", "service_queue", func(msg *nats.Msg) {
+	if _, err := s.nc.QueueSubscribe(voc.SubjectGet, voc.NatsToServicesQueue, func(msg *nats.Msg) {
 		user, err := s.cs.GetUser(string(msg.Data))
 		if err == nil {
 			msg.Respond([]byte(user))

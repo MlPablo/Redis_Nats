@@ -9,10 +9,6 @@ import (
 	"github.com/MlPablo/CRUDService/internal/store"
 )
 
-const (
-	SubjectCreate = "service.create"
-)
-
 type server struct {
 	router  *gin.Engine
 	storage store.Storage
