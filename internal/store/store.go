@@ -2,6 +2,7 @@ package store
 
 import (
 	"github.com/go-redis/redis/v9"
+	"github.com/spf13/viper"
 
 	"github.com/MlPablo/CRUDService/internal/models"
 )
@@ -16,7 +17,7 @@ type Storage interface {
 func New() Storage {
 	return &storage{redis.NewClient(
 		&redis.Options{
-			Addr:     ":6379",
+			Addr:     viper.Get("redis_port").(string),
 			Password: "",
 			DB:       0,
 		})}

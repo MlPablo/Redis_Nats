@@ -20,9 +20,10 @@ type SubscribedCRUDService interface {
 type subscribe struct {
 	crudService
 	cs crudService
+	nc *nats.Conn
 }
 
-func SubcribeAll(s SubscribedCRUDService, name string) error {
+func SubscribeAll(s SubscribedCRUDService, name string) error {
 	if err := s.SubscribeCreate(name); err != nil {
 		return err
 	}
@@ -38,16 +39,16 @@ func SubcribeAll(s SubscribedCRUDService, name string) error {
 	return nil
 }
 
-func NewSubscribedService(store store.Storage) SubscribedCRUDService {
-	return &subscribe{cs: crudService{storage: store}}
+func NewSubscribedService(store store.Storage) (SubscribedCRUDService, error) {
+	nc, err := nats.Connect(nats.DefaultURL)
+	if err != nil {
+		return nil, err
+	}
+	return &subscribe{cs: crudService{storage: store}, nc: nc}, nil
 }
 
 func (s *subscribe) SubscribeCreate(name string) error {
-	nc, err := nats.Connect(nats.DefaultURL)
-	if err != nil {
-		return err
-	}
-	if _, err := nc.QueueSubscribe("service.create", "service_queue", func(msg *nats.Msg) {
+	if _, err := s.nc.QueueSubscribe("service.create", "service_queue", func(msg *nats.Msg) {
 		user := models.User{}
 		if err := json.Unmarshal(msg.Data, &user); err != nil {
 			msg.Respond([]byte(err.Error()))
@@ -65,11 +66,7 @@ func (s *subscribe) SubscribeCreate(name string) error {
 }
 
 func (s *subscribe) SubscribeDelete(name string) error {
-	nc, err := nats.Connect(nats.DefaultURL)
-	if err != nil {
-		return err
-	}
-	if _, err := nc.QueueSubscribe("service.delete", "service_queue", func(msg *nats.Msg) {
+	if _, err := s.nc.QueueSubscribe("service.delete", "service_queue", func(msg *nats.Msg) {
 		if err := s.cs.DeleteUser(string(msg.Data)); err != nil {
 			msg.Respond([]byte(err.Error()))
 		}
@@ -82,11 +79,7 @@ func (s *subscribe) SubscribeDelete(name string) error {
 }
 
 func (s *subscribe) SubscribeUpdate(name string) error {
-	nc, err := nats.Connect(nats.DefaultURL)
-	if err != nil {
-		return err
-	}
-	if _, err := nc.QueueSubscribe("service.update", "service_queue", func(msg *nats.Msg) {
+	if _, err := s.nc.QueueSubscribe("service.update", "service_queue", func(msg *nats.Msg) {
 		user := models.User{}
 		if err := json.Unmarshal(msg.Data, &user); err != nil {
 			msg.Respond([]byte(err.Error()))
@@ -104,19 +97,13 @@ func (s *subscribe) SubscribeUpdate(name string) error {
 }
 
 func (s subscribe) SubscribeGet(name string) error {
-	nc, err := nats.Connect(nats.DefaultURL)
-	if err != nil {
-		return err
-	}
-	if _, err := nc.QueueSubscribe("service.get", "service_queue", func(msg *nats.Msg) {
+	if _, err := s.nc.QueueSubscribe("service.get", "service_queue", func(msg *nats.Msg) {
 		user, err := s.cs.GetUser(string(msg.Data))
 		if err == nil {
 			msg.Respond([]byte(user))
 		}
-
 	}); err != nil {
 		return err
 	}
-
 	return nil
 }
