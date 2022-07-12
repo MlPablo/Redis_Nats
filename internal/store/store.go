@@ -1,6 +1,8 @@
 package store
 
 import (
+	"context"
+
 	"github.com/go-redis/redis/v9"
 	"github.com/spf13/viper"
 
@@ -8,10 +10,10 @@ import (
 )
 
 type Storage interface {
-	Create(user models.User) error
-	Read(string) (string, error)
-	Update(user models.User) error
-	Delete(string) error
+	Create(ctx context.Context, user models.User) error
+	Read(ctx context.Context, id string) (string, error)
+	Update(ctx context.Context, user models.User) error
+	Delete(ctx context.Context, id string) error
 }
 
 func New() Storage {

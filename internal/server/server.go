@@ -1,6 +1,8 @@
 package server
 
 import (
+	"context"
+
 	"github.com/gin-gonic/gin"
 	"github.com/nats-io/nats.go"
 	"github.com/spf13/viper"
@@ -39,11 +41,11 @@ func Start() error {
 	if err != nil {
 		return err
 	}
-	if err := service.SubscribeAll(service1, "Service 1"); err != nil {
+	if err := service.SubscribeAll(service1, context.WithValue(context.Background(), "name", "Service 1")); err != nil {
 		return nil
 	}
 
-	if err := service.SubscribeAll(service2, "Service 2"); err != nil {
+	if err := service.SubscribeAll(service2, context.WithValue(context.Background(), "name", "Service 2")); err != nil {
 		return nil
 	}
 	if err := server.router.Run(viper.Get("Host_port").(string)); err != nil {

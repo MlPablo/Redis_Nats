@@ -1,7 +1,9 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
+	"log"
 
 	"github.com/nats-io/nats.go"
 
@@ -11,10 +13,10 @@ import (
 )
 
 type SubscribedCRUDService interface {
-	SubscribeCreate(string) error
-	SubscribeDelete(string) error
-	SubscribeUpdate(string) error
-	SubscribeGet(string) error
+	SubscribeCreate(context.Context) error
+	SubscribeDelete(context.Context) error
+	SubscribeUpdate(context.Context) error
+	SubscribeGet(context.Context) error
 	CRUDService
 }
 
@@ -24,17 +26,17 @@ type subscribe struct {
 	nc *nats.Conn
 }
 
-func SubscribeAll(s SubscribedCRUDService, name string) error {
-	if err := s.SubscribeCreate(name); err != nil {
+func SubscribeAll(s SubscribedCRUDService, ctx context.Context) error {
+	if err := s.SubscribeCreate(ctx); err != nil {
 		return err
 	}
-	if err := s.SubscribeDelete(name); err != nil {
+	if err := s.SubscribeDelete(ctx); err != nil {
 		return err
 	}
-	if err := s.SubscribeUpdate(name); err != nil {
+	if err := s.SubscribeUpdate(ctx); err != nil {
 		return err
 	}
-	if err := s.SubscribeGet(name); err != nil {
+	if err := s.SubscribeGet(ctx); err != nil {
 		return err
 	}
 	return nil
@@ -48,16 +50,17 @@ func NewSubscribedService(store store.Storage) (SubscribedCRUDService, error) {
 	return &subscribe{cs: crudService{storage: store}, nc: nc}, nil
 }
 
-func (s *subscribe) SubscribeCreate(name string) error {
+func (s *subscribe) SubscribeCreate(ctx context.Context) error {
 	if _, err := s.nc.QueueSubscribe(voc.SubjectCreate, voc.NatsToServicesQueue, func(msg *nats.Msg) {
 		user := models.User{}
 		if err := json.Unmarshal(msg.Data, &user); err != nil {
 			msg.Respond([]byte(err.Error()))
 		}
 
-		if err := s.cs.CreateUser(user); err != nil {
+		if err := s.cs.CreateUser(ctx, user); err != nil {
 			msg.Respond([]byte(err.Error()))
 		}
+		log.Println(ctx.Value("name"))
 		msg.Respond([]byte(""))
 	}); err != nil {
 		return err
@@ -66,11 +69,12 @@ func (s *subscribe) SubscribeCreate(name string) error {
 	return nil
 }
 
-func (s *subscribe) SubscribeDelete(name string) error {
+func (s *subscribe) SubscribeDelete(ctx context.Context) error {
 	if _, err := s.nc.QueueSubscribe(voc.SubjectDelete, voc.NatsToServicesQueue, func(msg *nats.Msg) {
-		if err := s.cs.DeleteUser(string(msg.Data)); err != nil {
+		if err := s.cs.DeleteUser(ctx, string(msg.Data)); err != nil {
 			msg.Respond([]byte(err.Error()))
 		}
+		log.Println(ctx.Value("name"))
 		msg.Respond([]byte(""))
 	}); err != nil {
 		return err
@@ -79,16 +83,16 @@ func (s *subscribe) SubscribeDelete(name string) error {
 	return nil
 }
 
-func (s *subscribe) SubscribeUpdate(name string) error {
+func (s *subscribe) SubscribeUpdate(ctx context.Context) error {
 	if _, err := s.nc.QueueSubscribe(voc.SubjectUpdate, voc.NatsToServicesQueue, func(msg *nats.Msg) {
 		user := models.User{}
 		if err := json.Unmarshal(msg.Data, &user); err != nil {
 			msg.Respond([]byte(err.Error()))
 		}
-		if err := s.cs.UpdateUser(user); err != nil {
+		if err := s.cs.UpdateUser(ctx, user); err != nil {
 			msg.Respond([]byte(err.Error()))
 		}
-
+		log.Println(ctx.Value("name"))
 		msg.Respond([]byte(""))
 	}); err != nil {
 		return err
@@ -97,10 +101,11 @@ func (s *subscribe) SubscribeUpdate(name string) error {
 	return nil
 }
 
-func (s subscribe) SubscribeGet(name string) error {
+func (s subscribe) SubscribeGet(ctx context.Context) error {
 	if _, err := s.nc.QueueSubscribe(voc.SubjectGet, voc.NatsToServicesQueue, func(msg *nats.Msg) {
-		user, err := s.cs.GetUser(string(msg.Data))
+		user, err := s.cs.GetUser(ctx, string(msg.Data))
 		if err == nil {
+			log.Println(ctx.Value("name"))
 			msg.Respond([]byte(user))
 		}
 	}); err != nil {
