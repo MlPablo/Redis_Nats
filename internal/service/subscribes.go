@@ -2,7 +2,6 @@ package service
 
 import (
 	"encoding/json"
-	"log"
 
 	"github.com/nats-io/nats.go"
 
@@ -53,11 +52,10 @@ func (s *subscribe) SubscribeCreate(name string) error {
 		if err := json.Unmarshal(msg.Data, &user); err != nil {
 			msg.Respond([]byte(err.Error()))
 		}
-		log.Println(user)
+
 		if err := s.cs.CreateUser(user); err != nil {
 			msg.Respond([]byte(err.Error()))
 		}
-		log.Println(name)
 		msg.Respond([]byte(""))
 	}); err != nil {
 		return err
@@ -75,7 +73,6 @@ func (s *subscribe) SubscribeDelete(name string) error {
 		if err := s.cs.DeleteUser(string(msg.Data)); err != nil {
 			msg.Respond([]byte(err.Error()))
 		}
-		log.Println(name)
 		msg.Respond([]byte(""))
 	}); err != nil {
 		return err
@@ -97,7 +94,7 @@ func (s *subscribe) SubscribeUpdate(name string) error {
 		if err := s.cs.UpdateUser(user); err != nil {
 			msg.Respond([]byte(err.Error()))
 		}
-		log.Println(name)
+
 		msg.Respond([]byte(""))
 	}); err != nil {
 		return err
@@ -113,11 +110,10 @@ func (s subscribe) SubscribeGet(name string) error {
 	}
 	if _, err := nc.QueueSubscribe("service.get", "service_queue", func(msg *nats.Msg) {
 		user, err := s.cs.GetUser(string(msg.Data))
-		log.Println(name)
 		if err == nil {
 			msg.Respond([]byte(user))
 		}
-		//msg.Respond([]byte(user))
+
 	}); err != nil {
 		return err
 	}
