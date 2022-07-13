@@ -26,7 +26,7 @@ type subscribe struct {
 	nc *nats.Conn
 }
 
-func SubscribeAll(s SubscribedCRUDService, ctx context.Context) error {
+func SubscribeAll(ctx context.Context, s SubscribedCRUDService) error {
 	if err := s.SubscribeCreate(ctx); err != nil {
 		return err
 	}

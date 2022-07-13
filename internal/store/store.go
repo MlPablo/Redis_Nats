@@ -1,19 +1,12 @@
 package store
 
 import (
-	"context"
-
 	"github.com/go-redis/redis/v9"
 	"github.com/spf13/viper"
-
-	"github.com/MlPablo/CRUDService/internal/models"
 )
 
 type Storage interface {
-	Create(ctx context.Context, user models.User) error
-	Read(ctx context.Context, id string) (string, error)
-	Update(ctx context.Context, user models.User) error
-	Delete(ctx context.Context, id string) error
+	NewCRUD() CRUD
 }
 
 func New() Storage {
@@ -26,5 +19,9 @@ func New() Storage {
 }
 
 type storage struct {
-	storage *redis.Client
+	store *redis.Client
+}
+
+func (s *storage) NewCRUD() CRUD {
+	return &crud{s}
 }

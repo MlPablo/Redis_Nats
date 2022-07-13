@@ -23,27 +23,27 @@ func NewCRUDService(store store.Storage) CRUDService {
 }
 
 func (c *crudService) CreateUser(ctx context.Context, user models.User) error {
-	if err := c.storage.Create(ctx, user); err != nil {
+	if err := c.storage.NewCRUD().Create(ctx, user); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (c *crudService) UpdateUser(ctx context.Context, user models.User) error {
-	if err := c.storage.Update(ctx, user); err != nil {
+	if err := c.storage.NewCRUD().Update(ctx, user); err != nil {
 		return err
 	}
 	return nil
 }
 func (c *crudService) GetUser(ctx context.Context, id string) (string, error) {
-	user, err := c.storage.Read(ctx, id)
+	user, err := c.storage.NewCRUD().Read(ctx, id)
 	if err != nil {
 		return "", err
 	}
 	return user, nil
 }
 func (c *crudService) DeleteUser(ctx context.Context, user string) error {
-	if err := c.storage.Delete(ctx, user); err != nil {
+	if err := c.storage.NewCRUD().Delete(ctx, user); err != nil {
 		return err
 	}
 	return nil

@@ -41,11 +41,11 @@ func Start() error {
 	if err != nil {
 		return err
 	}
-	if err := service.SubscribeAll(service1, context.WithValue(context.Background(), "name", "Service 1")); err != nil {
+	if err := service.SubscribeAll(context.WithValue(context.Background(), "name", "Service 1"), service1); err != nil {
 		return nil
 	}
 
-	if err := service.SubscribeAll(service2, context.WithValue(context.Background(), "name", "Service 2")); err != nil {
+	if err := service.SubscribeAll(context.WithValue(context.Background(), "name", "Service 2"), service2); err != nil {
 		return nil
 	}
 	if err := server.router.Run(viper.Get("Host_port").(string)); err != nil {
