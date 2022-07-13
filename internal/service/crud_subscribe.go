@@ -20,13 +20,13 @@ type SubscribedCRUDService interface {
 	CRUDService
 }
 
-type subscribe struct {
+type subscribeCRUDService struct {
 	crudService
 	cs crudService
 	nc *nats.Conn
 }
 
-func SubscribeAll(ctx context.Context, s SubscribedCRUDService) error {
+func SubscribeAllCRUD(ctx context.Context, s SubscribedCRUDService) error {
 	if err := s.SubscribeCreate(ctx); err != nil {
 		return err
 	}
@@ -47,11 +47,11 @@ func NewSubscribedService(store store.Storage) (SubscribedCRUDService, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &subscribe{cs: crudService{storage: store}, nc: nc}, nil
+	return &subscribeCRUDService{cs: crudService{storage: store}, nc: nc}, nil
 }
 
-func (s *subscribe) SubscribeCreate(ctx context.Context) error {
-	if _, err := s.nc.QueueSubscribe(voc.SubjectCreate, voc.NatsToServicesQueue, func(msg *nats.Msg) {
+func (s *subscribeCRUDService) SubscribeCreate(ctx context.Context) error {
+	if _, err := s.nc.QueueSubscribe(voc.SubjectCreate, voc.NatsToCrudServicesQueue, func(msg *nats.Msg) {
 		user := models.User{}
 		if err := json.Unmarshal(msg.Data, &user); err != nil {
 			msg.Respond([]byte(err.Error()))
@@ -69,12 +69,12 @@ func (s *subscribe) SubscribeCreate(ctx context.Context) error {
 	return nil
 }
 
-func (s *subscribe) SubscribeDelete(ctx context.Context) error {
-	if _, err := s.nc.QueueSubscribe(voc.SubjectDelete, voc.NatsToServicesQueue, func(msg *nats.Msg) {
+func (s *subscribeCRUDService) SubscribeDelete(ctx context.Context) error {
+	if _, err := s.nc.QueueSubscribe(voc.SubjectDelete, voc.NatsToCrudServicesQueue, func(msg *nats.Msg) {
 		if err := s.cs.DeleteUser(ctx, string(msg.Data)); err != nil {
 			msg.Respond([]byte(err.Error()))
 		}
-		log.Println(ctx.Value("name"))
+		log.Printf("Name of service is %s", ctx.Value("name"))
 		msg.Respond([]byte(""))
 	}); err != nil {
 		return err
@@ -83,8 +83,8 @@ func (s *subscribe) SubscribeDelete(ctx context.Context) error {
 	return nil
 }
 
-func (s *subscribe) SubscribeUpdate(ctx context.Context) error {
-	if _, err := s.nc.QueueSubscribe(voc.SubjectUpdate, voc.NatsToServicesQueue, func(msg *nats.Msg) {
+func (s *subscribeCRUDService) SubscribeUpdate(ctx context.Context) error {
+	if _, err := s.nc.QueueSubscribe(voc.SubjectUpdate, voc.NatsToCrudServicesQueue, func(msg *nats.Msg) {
 		user := models.User{}
 		if err := json.Unmarshal(msg.Data, &user); err != nil {
 			msg.Respond([]byte(err.Error()))
@@ -101,8 +101,8 @@ func (s *subscribe) SubscribeUpdate(ctx context.Context) error {
 	return nil
 }
 
-func (s subscribe) SubscribeGet(ctx context.Context) error {
-	if _, err := s.nc.QueueSubscribe(voc.SubjectGet, voc.NatsToServicesQueue, func(msg *nats.Msg) {
+func (s subscribeCRUDService) SubscribeGet(ctx context.Context) error {
+	if _, err := s.nc.QueueSubscribe(voc.SubjectGet, voc.NatsToCrudServicesQueue, func(msg *nats.Msg) {
 		user, err := s.cs.GetUser(ctx, string(msg.Data))
 		if err == nil {
 			log.Println(ctx.Value("name"))

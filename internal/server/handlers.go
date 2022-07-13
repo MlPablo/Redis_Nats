@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/nats-io/nats.go"
 
 	"github.com/MlPablo/CRUDService/internal/models"
 	"github.com/MlPablo/CRUDService/voc"
@@ -94,5 +95,43 @@ func (s *server) GetUserByID() gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{"user": string(resp.Data)})
+	}
+}
+
+func (s *server) CreateOrder() gin.HandlerFunc {
+	js, _ := s.nc.JetStream()
+	msgChan := make(chan *nats.Msg)
+	js.ChanSubscribe(voc.SubjectStatusCreateOrder, msgChan)
+
+	return func(c *gin.Context) {
+		order := models.Order{}
+		if err := c.BindJSON(&order); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		byteUser, err := json.Marshal(order)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, "Cannot connect to nats")
+			return
+		}
+
+		_, err = js.Publish(voc.SubjectCreateOrder, byteUser)
+
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		select {
+		case <-time.After(1 * time.Second):
+			c.JSON(http.StatusBadRequest, gin.H{"error": "time exceeded"})
+			return
+		case msg := <-msgChan:
+			if len(msg.Data) != 0 {
+				c.JSON(http.StatusBadRequest, gin.H{"error": string(msg.Data)})
+				return
+			}
+			c.JSON(http.StatusCreated, gin.H{"status": "created"})
+		}
 	}
 }

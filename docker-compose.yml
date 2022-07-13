@@ -5,6 +5,10 @@ services:
     ports:
       - "6379:6379"
   nats:
+    container_name: "Nats"
     image: nats
+    command: [ "-js", "-m", "8222" ]
     ports:
       - "4222:4222"
+      - "8222:8222"
+      - "6222:6222"

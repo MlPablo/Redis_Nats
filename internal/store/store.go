@@ -7,6 +7,7 @@ import (
 
 type Storage interface {
 	NewCRUD() CRUD
+	NewOrders() Orders
 }
 
 func New() Storage {
@@ -24,4 +25,8 @@ type storage struct {
 
 func (s *storage) NewCRUD() CRUD {
 	return &crud{s}
+}
+
+func (s *storage) NewOrders() Orders {
+	return &orders{s}
 }
